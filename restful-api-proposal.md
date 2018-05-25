@@ -26,6 +26,9 @@
 在RESTful这种无状态架构中，一般使用OAuth：
 * 阮一峰：[理解OAuth 2.0](http://www.ruanyifeng.com/blog/2014/05/oauth_2_0.html)
 
+### REST API测试工具
+* [Postman](https://www.getpostman.com/)
+
 ## API设计
 本节将尝试设计一个REST架构的教务系统API。
 
