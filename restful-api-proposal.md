@@ -59,3 +59,98 @@
 **返回：** 成功时返回状态码`200`，失败时返回状态码`204`
 
 #### 后端实现
+完成登录认证的相关逻辑在后端代码的`modules/LoginAuth.js`中。导出的`LoginAuth`对象本身是一个构造器（用其他语言理解，相当于一个类和一个构造函数），接受一个用户信息参数。`LoginAuth`本身还有成员函数（用其他语言理解，从语法和语义上相当于Java或C++的静态成员）。
+
+用`LoginAuth`构造对象：
+
+```javascript
+var a = LoginAuth(userinfo);
+```
+
+其中，`userinfo`是BASE64形式的用户登录信息`{username, password, timestamp}`。`LoginAuth`构造器会解码这个用户信息，如果认证成功，可以通过成员函数`.getAccessToken()`获得一个access token返回客户端。原型对象的成员（用Java或C++的话讲，非静态成员）如下：
+
+```
+.userinfo         // 用来构造该对象的用户登录信息
+.isValidUser      // 布尔值，是否是有效用户
+.isAuthorized     // 布尔值，是否已经被认证
+.getAccessToken() // 获得一个access token
+.getUserRoles()   // 获得用户角色数组
+```
+
+`LoginAuth`对象直接的成员有（可以用Java或C++的静态成员类比）：
+
+```
+LoginAuth.isUser(username)               // 判断是否是合法用户
+LoginAuth.isVerifiedAccessToken(token)   // 判断access token是否被认证
+LoginAuth.getRoles(token)                // 从access token中获得用户角色
+LoginAuth.getUsername(token)             // 从access token中获得用户名
+```
+
+涉及到数据访问的操作在`dataModels/user.js`，目前还是假数据。在后面应该用相同的接口的代码替换，将数据库返回的结果以JSON的形式与其他逻辑相交互。
+
+> 下面这部分API设计仅供启发思路，作为REST架构应用的一个风格倡议。
+
+### 用户信息
+#### 接口
+##### POST /api/user/:userid
+**前置条件：** 用户已认证，且具有管理员角色
+
+**数据内容：** 
+```javascript
+BASE64(JSON.stringfy({
+  username: <string>,
+  password: <string>,
+  name : <string>,
+  sex  : <string|'male'/'female'/'others'>,
+  phone: <string>,
+  email: <string>,
+  role : ['student', 'lecturer', 'admin'],
+  depart: <string>,
+  class: <string>,
+  admissionYear: int,
+  courses: ['123-2016-1', '456-2017-2'],
+}))
+```
+
+**样例数据：**
+```javascript
+BASE64(JSON.stringfy({
+  username: '3162319803',
+  password: 'yangle250ERZHENG',
+  name : '杨乐二正',
+  sex  : 'male',
+  phone: '12312344321',
+  email: 'yangleer@zheng.moe',
+  role : ['student'],
+  depart: '计算机科学与技术',
+  class: '1509班',
+  admissionYear: 2016,
+  courses: ['123-2016-1', '456-2017-2'],
+}))
+```
+
+上文中的`BASE64`仅代表使用BASE64编码，具体形式取决于实现。
+
+**行为：**
+1. 检查必要字段完好性（如用户名、密码等）
+2. 覆盖更新数据库内容
+
+**异常：** 若未认证或认证用户不具有管理员角色，返回403
+
+##### DELETE /api/user/:username
+**前置条件：** 用户已认证，具有管理员角色，URL参数`username`存在。
+
+**行为：** 删除（为了安全性，或懒惰删除）
+
+**异常：** 若未认证或认证用户不具有管理员角色，返回403
+
+##### PUT /api/user/:username
+**前置条件：** 用户已认证，具有管理员角色，URL参数`username`存在。
+
+**数据内容：** 与上文POST类同，但不要求包含所有必要字段。
+
+**行为：** 合并更新用户数据
+
+**异常：** 若未认证或认证用户不具有管理员角色，返回403
+
+##### GET /api/user/:username
